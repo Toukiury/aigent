@@ -265,15 +265,25 @@ with gr.Blocks(title="通用问题优化智能体") as demo:
     )
 
 
+def _is_hf_space() -> bool:
+    return bool(os.getenv("SPACE_ID") or os.getenv("SYSTEM") == "spaces")
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "7860"))
-    # 127.0.0.1 可在浏览器直接打开；0.0.0.0 仅用于监听，不能作为访问地址
-    server_name = os.getenv("SERVER_NAME", "127.0.0.1")
-    print(f"\n>>> 请在浏览器打开: http://127.0.0.1:{port}  或  http://localhost:{port}\n")
+    on_hf = _is_hf_space()
+
+    if on_hf:
+        # Hugging Face Space 容器内必须用 0.0.0.0，由平台反向代理对外提供服务
+        server_name = "0.0.0.0"
+    else:
+        server_name = os.getenv("SERVER_NAME", "127.0.0.1")
+        print(f"\n>>> 请在浏览器打开: http://127.0.0.1:{port}  或  http://localhost:{port}\n")
+
     demo.launch(
         server_name=server_name,
         server_port=port,
-        share=os.getenv("GRADIO_SHARE", "false").lower() == "true",
+        share=not on_hf and os.getenv("GRADIO_SHARE", "false").lower() == "true",
         css=CSS,
         theme=gr.themes.Soft(),
     )
