@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from agent.config import PROMPT_TEMPLATES, get_active_model_info
 from agent.optimizer import QuestionOptimizer
 from pdf_generator import generate_pdf
-from ui_format import TIMELINE_CSS, render_comparison_html, render_timeline
+from ui_format import TIMELINE_CSS, render_comparison_html, render_score_html, render_timeline
 
 load_dotenv()
 
@@ -38,7 +38,7 @@ def _empty_outputs():
         render_timeline_empty(),
         "",
         "",
-        "*等待优化...*",
+        render_score_html({}),
         "",
         "<p style='color:#111;font-weight:600;'>等待对比结果...</p>",
         "",
@@ -52,19 +52,8 @@ def render_timeline_empty():
     return render_timeline(StreamState(status="等待输入问题..."))
 
 
-def _score_md(evaluation: dict) -> str:
-    if not evaluation:
-        return "*等待质量评估...*"
-    return (
-        f"### 质量评分\n"
-        f"清晰度 **{evaluation.get('clarity_score', '-')}/10** · "
-        f"完整性 **{evaluation.get('completeness_score', '-')}/10** · "
-        f"可执行性 **{evaluation.get('actionability_score', '-')}/10** · "
-        f"背景融入 **{evaluation.get('context_reflection_score', '-')}/10** · "
-        f"综合 **{evaluation.get('overall_score', '-')}/10**\n\n"
-        f"_{evaluation.get('feedback', '')}_\n\n"
-        f"*背景检查：{evaluation.get('context_check', '—')}*"
-    )
+def _score_html(evaluation: dict) -> str:
+    return render_score_html(evaluation)
 
 
 def _comparison_html(comparison: dict, done: bool, enabled: bool) -> str:
@@ -101,7 +90,7 @@ def _build_outputs(state, enable_compare: bool, pdf_path=None):
     timeline_html = render_timeline(state)
     optimized = state.optimized_question or ""
     system_prompt = state.system_prompt or ""
-    score = _score_md(state.evaluation)
+    score = _score_html(state.evaluation)
     clarify = _clarify_text(state.clarifying_questions)
     comparison = _comparison_html(state.comparison, state.done, enable_compare)
     report = state.result.to_markdown() if state.result else ""
@@ -225,7 +214,7 @@ with gr.Blocks(title="通用问题优化智能体") as demo:
                 lines=3,
                 placeholder="完成「System Prompt」工具后将在此显示...",
             )
-            score_output = gr.Markdown(value="*等待质量评估...*")
+            score_output = gr.HTML(value=render_score_html({}))
             with gr.Accordion("建议追问", open=False):
                 clarify_output = gr.Textbox(lines=3, show_label=False, placeholder="完成「追问建议」后显示...")
             with gr.Accordion("优化前后回答对比", open=True):

@@ -44,6 +44,45 @@ def _esc(text: str) -> str:
     return html.escape(str(text))
 
 
+def render_score_html(evaluation: dict) -> str:
+    """渲染质量评分区块（深色高对比）"""
+    if not evaluation:
+        return "<p style='color:#111827;font-weight:700;'>等待质量评估...</p>"
+
+    def item(label: str, val) -> str:
+        return (
+            f"<span style='color:#0f172a;font-weight:800;'>{label}</span> "
+            f"<span style='color:#1d4ed8;font-weight:800;font-size:1.05rem;'>{val}</span>"
+            f"<span style='color:#0f172a;font-weight:700;'>/10</span>"
+        )
+
+    scores = " &nbsp;·&nbsp; ".join(
+        [
+            item("清晰度", evaluation.get("clarity_score", "-")),
+            item("完整性", evaluation.get("completeness_score", "-")),
+            item("可执行性", evaluation.get("actionability_score", "-")),
+            item("背景融入", evaluation.get("context_reflection_score", "-")),
+            item("综合", evaluation.get("overall_score", "-")),
+        ]
+    )
+    feedback = evaluation.get("feedback", "")
+    context_check = evaluation.get("context_check", "—")
+
+    return f"""
+    <div style="background:#f8fafc;border:2px solid #334155;border-radius:10px;padding:14px 16px;">
+      <div style="color:#0f172a;font-weight:800;font-size:1.1rem;margin-bottom:10px;">📊 质量评分</div>
+      <div style="margin-bottom:12px;line-height:1.8;">{scores}</div>
+      <div style="color:#111827;font-weight:600;font-size:0.95rem;line-height:1.7;margin-bottom:10px;">
+        {html.escape(feedback)}
+      </div>
+      <div style="background:#e2e8f0;border-left:4px solid #2563eb;padding:10px 12px;border-radius:6px;">
+        <span style="color:#0f172a;font-weight:800;">背景检查：</span>
+        <span style="color:#1e293b;font-weight:600;">{html.escape(str(context_check))}</span>
+      </div>
+    </div>
+    """
+
+
 def render_comparison_html(comparison: dict[str, Any], compact: bool = False) -> str:
     """渲染优化前后对比（深色高对比，内联样式）"""
     if not comparison:
